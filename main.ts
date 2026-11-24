@@ -72,10 +72,15 @@ interface FileLines {
   final: boolean;
 }
 
+/** The line break a text uses, taken from its first '\n': '\r\n' when a '\r' precedes it, else '\n'. */
+function breakOf(text: string): string {
+  const nl = text.indexOf('\n');
+  return nl > 0 && text[nl - 1] === '\r' ? '\r\n' : '\n';
+}
+
 function splitFile(text: string): FileLines {
   if (text === '') return { br: '\n', lines: [], final: false };
-  const nl = text.indexOf('\n');
-  const br = nl > 0 && text[nl - 1] === '\r' ? '\r\n' : '\n';
+  const br = breakOf(text);
   const parts = text.split(br);
   const fin = text.endsWith(br);
   if (fin) parts.pop();
@@ -672,8 +677,7 @@ function jsonEdit(v: unknown): Edit | null {
     const newStr = (o.new_str as string | undefined) ?? '';
     return (tree) => {
       const before = exists(tree);
-      const nl = before.indexOf('\n');
-      const crlf = nl > 0 && before[nl - 1] === '\r';
+      const crlf = breakOf(before) === '\r\n';
       const lf = (s: string): string => (crlf ? s.replaceAll('\r\n', '\n') : s);
       const t = lf(before);
       const old = lf(oldStr);
@@ -691,8 +695,7 @@ function jsonEdit(v: unknown): Edit | null {
     const add = patchLines(o.new_str);
     return (tree) => {
       const before = exists(tree);
-      const nl = before.indexOf('\n');
-      const br = nl > 0 && before[nl - 1] === '\r' ? '\r\n' : '\n';
+      const br = breakOf(before);
       const lines = before === '' ? [] : before.split(br);
       const final = before !== '' && before.endsWith(br);
       if (final) lines.pop();
